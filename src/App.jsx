@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import Datapath from "./components/Datapath.jsx";
 import InstrAnatomy from "./components/InstrAnatomy.jsx";
 import CodeEditor from "./components/CodeEditor.jsx";
+import ZoomPane from "./components/ZoomPane.jsx";
 import { assemble, loadHex, hex, ABI, typeOf, mnemonicOf, SUPPORTED } from "./sim/isa.js";
 import { initialState, evaluate, step, activeElements, explain, ALU_NAME } from "./sim/cpu.js";
 import { compileC } from "./sim/minic.js";
@@ -640,9 +641,9 @@ export default function App() {
                   )}
                   {cur.selfLoop && <span className="halt">{st.message}</span>}
                 </div>
-                <div className="dp-wrap" ref={dpRef}>
+                <ZoomPane innerRef={dpRef}>
                   <Datapath active={active} ctrl={okSig ? sig.ctrl : null} hoverSignal={hoverSignal} onHoverSignal={setHoverSignal} />
-                </div>
+                </ZoomPane>
               </div>
             </div>
           </div>

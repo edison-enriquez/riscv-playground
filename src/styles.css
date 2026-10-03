@@ -232,7 +232,23 @@ select, input:not([type="range"]) { font: 12.5px var(--font-ui); color: var(--in
 .code-editor .cm-editor.cm-focused { outline: none; }
 
 /* ruta de datos */
-.dp-scroll { flex: 1; min-height: 0; overflow: auto; padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+.dp-scroll { flex: 1; min-height: 0; overflow: hidden; padding: 10px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.dp-scroll > .instr-head { padding: 0 14px; }
+/* visor con zoom */
+.dp-stage { flex: 1; min-height: 0; position: relative; display: flex; border-top: 1px solid var(--surface-2); }
+.dp-viewport { flex: 1; min-width: 0; overflow: auto; padding: 4px; cursor: default; overscroll-behavior: contain; }
+.dp-viewport.dragging { cursor: grabbing; user-select: none; }
+.dp-viewport.dragging * { cursor: grabbing !important; }
+.dp-wrap { margin: 0 auto; }
+.zoombar { position: absolute; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 1px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 7px; box-shadow: var(--shadow); padding: 2px; z-index: 2; }
+.zoombar button { border: none; background: transparent; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 5px; font: 600 15px var(--font-ui); color: var(--ink);
+  display: inline-grid; place-items: center; }
+.zoombar button:hover:not(:disabled) { background: var(--surface-2); }
+.zoombar .zpct { font: 500 12px var(--font-mono); min-width: 52px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.zoombar .zfit { border-left: 1px solid var(--line); border-radius: 0 5px 5px 0; }
+.zoomhint { position: absolute; left: 12px; bottom: 14px; font-size: 11px; color: var(--muted); pointer-events: none; background: var(--editor-bg); padding: 2px 6px; border-radius: 4px; }
+@media (max-width: 1100px) { .zoomhint { display: none; } }
 
 /* panel inferior */
 .panel-area { height: var(--panel-h); flex: none; display: flex; flex-direction: column; border-top: 1px solid var(--line); background: var(--editor-bg); min-height: 0; }
@@ -290,6 +306,7 @@ button.sb-item:hover { background: rgba(255, 255, 255, 0.15); }
   .code-group { height: 340px; }
   .dp-group { flex: none; }
   .dp-scroll { overflow: visible; }
+  .dp-stage { flex: none; height: min(78vh, 560px); }
   .panel-area { height: auto; max-height: none; }
   .panel-body { overflow: visible; }
   .statusbar { position: sticky; bottom: 0; }
@@ -303,8 +320,7 @@ button.sb-item:hover { background: rgba(255, 255, 255, 0.15); }
 .hexw { font: 13px var(--font-mono); color: var(--muted); }
 .halt { font-weight: 500; color: var(--warn); }
 .fmt-badge { font-size: 12px; padding: 1px 9px; border-radius: 10px; color: var(--ctrl); background: var(--ctrl-soft); white-space: nowrap; }
-.dp-wrap { overflow-x: auto; background: var(--surface); }
-.dp { display: block; width: 100%; min-width: 640px; height: auto; font-family: var(--font-ui); }
+.dp { display: block; width: 100%; height: auto; font-family: var(--font-ui); }
 .dp .wire { fill: none; stroke: var(--wire-dim); stroke-width: 2.5; stroke-linejoin: round; transition: stroke 0.2s; }
 .dp .wire.thin { stroke-width: 2; }
 .dp .wire.on { stroke: var(--accent); stroke-width: 4.5; }
