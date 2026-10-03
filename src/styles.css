@@ -222,10 +222,11 @@ select, input:not([type="range"]) { font: 12.5px var(--font-ui); color: var(--in
 .tab-actions { display: flex; align-items: center; gap: 4px; padding: 0 8px; flex: none; }
 /* acciones del editor, como en VS Code: iconos sin texto, ▷ + menú */
 .runsplit { position: relative; display: flex; align-items: center; }
-.ea-btn { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: none; border-radius: 5px; background: transparent; color: var(--ink); }
+.ea-btn { display: inline-grid; place-items: center; width: 28px; height: 26px; padding: 0; border: none; border-radius: 5px; background: transparent; color: var(--ink); }
 .ea-btn:first-child { color: var(--accent); }
+.ea-btn:first-child:hover:not(:disabled) { color: var(--accent); filter: brightness(1.1); }
 .ea-btn:hover:not(:disabled), .ea-btn.on { background: var(--surface-2); }
-.ea-btn.chev { width: 16px; color: var(--muted); border-radius: 0 5px 5px 0; }
+.ea-btn.chev { width: 18px; color: var(--muted); border-radius: 0 5px 5px 0; }
 .runsplit:hover .ea-btn:first-child:not(:disabled) { border-radius: 5px 0 0 5px; }
 .runsplit:hover .ea-btn { background: var(--surface-2); }
 .ea-btn.busy .ico { animation: pulse 0.9s ease-in-out infinite alternate; }
