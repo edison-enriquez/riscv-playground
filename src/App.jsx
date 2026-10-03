@@ -3,6 +3,7 @@ import Datapath from "./components/Datapath.jsx";
 import InstrAnatomy from "./components/InstrAnatomy.jsx";
 import CodeEditor from "./components/CodeEditor.jsx";
 import ZoomPane from "./components/ZoomPane.jsx";
+import RunSplit from "./components/RunSplit.jsx";
 import { assemble, loadHex, hex, ABI, typeOf, mnemonicOf, SUPPORTED } from "./sim/isa.js";
 import { initialState, evaluate, step, activeElements, explain, ALU_NAME } from "./sim/cpu.js";
 import { compileC } from "./sim/minic.js";
@@ -198,25 +199,26 @@ export default function App() {
     reportProgram(prog, what);
     return prog;
   };
-  const doAssemble = () => { setCMap(null); assembleText(source); };
+  const doAssemble = () => { setCMap(null); return assembleText(source); };
   const doLoadHex = () => {
     const base = parseInt(hexBase, hexBase.toLowerCase().startsWith("0x") ? 16 : 10) >>> 0;
     const prog = loadHex(hexSource, isNaN(base) ? 0 : base);
     setCMap(null);
     loadProgram(prog, "hex", hexSource);
     reportProgram(prog, "Cargado programa.hex");
+    return prog;
   };
   const doCompileMini = () => {
     save("rv-csrc", cSource);
     addLog("info", "Compilando main.c con el compilador didáctico (solo las 13 instrucciones del libro)…");
     const r = compileC(cSource);
     setCErrors(r.errors);
-    if (r.errors.length) { addLog("err", `main.c: ${r.errors[0].msg} (línea ${r.errors[0].line}).`); setPanelTab("problemas"); return; }
+    if (r.errors.length) { addLog("err", `main.c: ${r.errors[0].msg} (línea ${r.errors[0].line}).`); setPanelTab("problemas"); return null; }
     setSource(r.asm);
     setCMap(cLineMap(r.asm));
     setBuilt((b) => ({ ...b, c: cSource }));
     openTab("asm", false);
-    assembleText(r.asm, "c", "Compilado main.c → programa.s → programa.hex");
+    return assembleText(r.asm, "c", "Compilado main.c → programa.s → programa.hex");
   };
   const doCompileGCC = async () => {
     save("rv-csrc", cSource);
@@ -230,15 +232,44 @@ export default function App() {
       setBuilt((b) => ({ ...b, c: cSource }));
       openTab("asm", false);
       if (r.warnings) addLog("warn", r.warnings);
-      assembleText(r.asm, "gcc", "GCC generó programa.s");
+      return assembleText(r.asm, "gcc", "GCC generó programa.s");
     } catch (e) {
       addLog("err", e.message);
       setPanelTab("salida");
+      return null;
     } finally {
       setGccBusy(false);
     }
   };
-  const runFile = { c: doCompileMini, asm: doAssemble, hex: doLoadHex };
+  // acciones del editor (botón ▷ con menú, como VS Code)
+  const andRun = async (fn) => {
+    const p = await fn();
+    if (p && !p.errors.length) { setRunFrom(1); setRunning(true); addLog("info", "Ejecutando… (F5 pausa)"); }
+  };
+  const gccDetail = `${gccLang === "cpp" ? "C++" : "C"} ${gccOpt}`;
+  const fileActions = {
+    c: [
+      { id: "mini", label: "Compilar para este procesador", icon: "run", kbd: "Ctrl+Enter", run: doCompileMini },
+      { id: "mini-run", label: "Compilar y ejecutar", icon: "runall", kbd: "Ctrl+Enter", run: () => andRun(doCompileMini) },
+      { separator: true },
+      { id: "gcc", label: "Compilar con GCC", detail: gccDetail, icon: "cloud", kbd: "Ctrl+Enter", run: doCompileGCC, disabled: gccBusy },
+      { id: "gcc-run", label: "Compilar con GCC y ejecutar", detail: gccDetail, icon: "cloud", kbd: "Ctrl+Enter", run: () => andRun(doCompileGCC), disabled: gccBusy },
+      { separator: true },
+      { id: "cfg", label: "Configurar compiladores…", icon: "gear", noDefault: true, run: () => { setView("build"); setL({ sidebar: true }); } },
+    ],
+    asm: [
+      { id: "asm", label: "Ensamblar y cargar", icon: "run", kbd: "Ctrl+Enter", run: doAssemble },
+      { id: "asm-run", label: "Ensamblar y ejecutar", icon: "runall", kbd: "Ctrl+Enter", run: () => andRun(doAssemble) },
+    ],
+    hex: [
+      { id: "hex", label: "Cargar código máquina", icon: "run", kbd: "Ctrl+Enter", run: doLoadHex },
+      { id: "hex-run", label: "Cargar y ejecutar", icon: "runall", kbd: "Ctrl+Enter", run: () => andRun(doLoadHex) },
+    ],
+  };
+  const [runDefaults, setRunDefaults] = useState(() => loadJSON("rv-rundef", { c: "mini", asm: "asm", hex: "hex" }));
+  useEffect(() => { save("rv-rundef", JSON.stringify(runDefaults)); }, [runDefaults]);
+  const defaultAction = (id) => fileActions[id].find((a) => a.id === runDefaults[id] && !a.separator) || fileActions[id][0];
+  const runFile = { c: () => defaultAction("c").run(), asm: () => defaultAction("asm").run(), hex: () => defaultAction("hex").run() };
 
   const openExample = (kind, ex) => {
     if (kind === "c") { setCSource(ex.src); setCErrors([]); openTab("c"); addLog("info", `Abierto ejemplo en C: ${ex.name}.`); }
@@ -396,7 +427,6 @@ export default function App() {
   const dirty = { c: cSource !== built.c, asm: source !== built.asm, hex: hexSource !== built.hex };
   const onTabsWheel = (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY; };
   const wbStyle = { "--side-w": `${layout.side}px`, "--code-w": `${layout.codeW}px`, "--panel-h": `${layout.panelH}px` };
-  const runLabel = { c: "Compilar", asm: "Ensamblar", hex: "Cargar" }[curFile.id];
   const stateLabel = running ? "Ejecutando" : finished ? (st.halted ? "Detenido" : "Terminado") : history.length > 1 ? "En pausa" : "Listo";
 
   return (
@@ -594,8 +624,8 @@ export default function App() {
                       {curFile.id === "hex" && (
                         <label className="basefield" title="Dirección de la primera palabra">base <input value={hexBase} onChange={(e) => setHexBase(e.target.value)} size="7" aria-label="Dirección inicial" /></label>
                       )}
-                      <button className="run-btn" onClick={runFile[curFile.id]} title={`${runLabel} (Ctrl+Enter)`}><Icon name="run" size={14} />{runLabel}</button>
-                      {curFile.id === "c" && <button className="mini-btn txt" onClick={doCompileGCC} disabled={gccBusy} title="Compilar con GCC en Compiler Explorer">{gccBusy ? "…" : "GCC"}</button>}
+                      <RunSplit key={curFile.id} actions={fileActions[curFile.id]} defaultId={runDefaults[curFile.id]}
+                        onPick={(id) => setRunDefaults((d) => ({ ...d, [curFile.id]: id }))} busy={curFile.id === "c" && gccBusy} />
                     </div>
                   </div>
                   <div className="breadcrumb">

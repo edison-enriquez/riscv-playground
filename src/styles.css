@@ -220,7 +220,28 @@ select, input:not([type="range"]) { font: 12.5px var(--font-ui); color: var(--in
 .tree-row:hover .tree-close, .tree-close:focus-visible { visibility: visible; }
 .tdot-inline { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin-left: 6px; }
 .tab-actions { display: flex; align-items: center; gap: 4px; padding: 0 8px; flex: none; }
-.run-btn { display: inline-flex; align-items: center; gap: 5px; border: none; background: var(--accent); color: var(--accent-ink); padding: 3px 10px; font-size: 12px; }
+/* acciones del editor, como en VS Code: iconos sin texto, ▷ + menú */
+.runsplit { position: relative; display: flex; align-items: center; }
+.ea-btn { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: none; border-radius: 5px; background: transparent; color: var(--ink); }
+.ea-btn:first-child { color: var(--accent); }
+.ea-btn:hover:not(:disabled), .ea-btn.on { background: var(--surface-2); }
+.ea-btn.chev { width: 16px; color: var(--muted); border-radius: 0 5px 5px 0; }
+.runsplit:hover .ea-btn:first-child:not(:disabled) { border-radius: 5px 0 0 5px; }
+.runsplit:hover .ea-btn { background: var(--surface-2); }
+.ea-btn.busy .ico { animation: pulse 0.9s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.3; } }
+.ctxmenu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; width: max-content; min-width: 260px; max-width: min(92vw, 460px); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 7px; box-shadow: var(--shadow); padding: 4px; display: flex; flex-direction: column; }
+.ctxitem { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 6px; width: 100%; text-align: left; border: none;
+  border-radius: 4px; background: transparent; padding: 5px 8px; font-size: 12.5px; color: var(--ink); white-space: nowrap; }
+.ctxitem:hover:not(:disabled), .ctxitem:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
+.ctxitem:hover:not(:disabled) .ctxkbd, .ctxitem:focus-visible .ctxkbd, .ctxitem:hover:not(:disabled) em, .ctxitem:focus-visible em,
+.ctxitem:hover:not(:disabled) .ctxicon, .ctxitem:focus-visible .ctxicon { color: inherit; }
+.ctxicon { display: grid; place-items: center; color: var(--muted); }
+.ctxlabel em { font-style: normal; color: var(--muted); margin-left: 8px; font-size: 11.5px; }
+.ctxkbd { font-size: 11.5px; color: var(--muted); padding-left: 16px; }
+.ctxsep { height: 1px; background: var(--line); margin: 4px 6px; }
+@media (prefers-reduced-motion: reduce) { .ea-btn.busy .ico { animation: none; } }
 .basefield { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); }
 .basefield input { width: 7.5ch; font: 12px var(--font-mono); }
 .breadcrumb { display: flex; align-items: center; gap: 4px; padding: 3px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--surface-2); white-space: nowrap; overflow: hidden; }
