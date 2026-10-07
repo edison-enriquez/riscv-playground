@@ -4,6 +4,7 @@ import InstrAnatomy from "./components/InstrAnatomy.jsx";
 import CodeEditor from "./components/CodeEditor.jsx";
 import ZoomPane from "./components/ZoomPane.jsx";
 import RunSplit from "./components/RunSplit.jsx";
+import IsaRef from "./components/IsaRef.jsx";
 import { assemble, loadHex, hex, ABI, typeOf, mnemonicOf, SUPPORTED } from "./sim/isa.js";
 import { initialState, evaluate, step, activeElements, explain, ALU_NAME } from "./sim/cpu.js";
 import { compileC } from "./sim/minic.js";
@@ -22,6 +23,10 @@ const FILES = [
   { id: "hex", name: "programa.hex", lang: "Hex", icon: "H" },
 ];
 
+const RIGHT_TABS = {
+  dp: { name: "Ruta de datos", icon: "chip", cls: "f-dp", title: "Ruta de datos single-cycle" },
+  isa: { name: "RV32I", icon: "book", cls: "f-isa", title: "Set de instrucciones RV32I (referencia)" },
+};
 const fmtVal = (v, mode) => (v === null || v === undefined ? "x" : mode === "dec" ? String(v | 0) : "0x" + hex(v));
 function load(key, fallback) { try { const v = localStorage.getItem(key); return v ?? fallback; } catch { return fallback; } }
 function save(key, v) { try { localStorage.setItem(key, v); } catch { /* sin almacenamiento */ } }
@@ -58,6 +63,7 @@ function Icon({ name, size = 18 }) {
     open: <><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></>,
     error: <><circle cx="12" cy="12" r="9" /><path d="M9 9l6 6M15 9l-6 6" /></>,
     warn: <><path d="M12 3l10 18H2z" /><path d="M12 10v5M12 18v.5" /></>,
+    book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" /><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" /><path d="M8 7.5h8M8 11h6" /></>,
     chip: <><rect x="6" y="6" width="12" height="12" rx="1.5" /><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" /></>,
   };
   return (
@@ -129,6 +135,8 @@ export default function App() {
     try { const t = JSON.parse(load("rv-open", "[]")); if (Array.isArray(t) && t.length) return t.filter((x) => FILES.some((f) => f.id === x)); } catch { /* nada */ }
     return ["c", "asm"];
   });
+  const [rightTabs, setRightTabs] = useState(() => { try { const t = JSON.parse(load("rv-rtabs", "[]")); return Array.isArray(t) && t.length ? t.filter((x) => ["dp", "isa"].includes(x)) : ["dp"]; } catch { return ["dp"]; } });
+  const [rightTab, setRightTab] = useState(() => load("rv-rtab", "dp"));
   const [panelTab, setPanelTab] = useState(() => load("rv-ptab", "formato"));
   const [secs, setSecs] = useState(() => loadJSON("rv-secs", { regs: true, imem: true, dmem: true, prog: true, cex: true, aex: true, mini: true, gcc: true }));
   const [cursor, setCursor] = useState({ line: 1, col: 1 });
@@ -146,6 +154,15 @@ export default function App() {
   useEffect(() => { save("rv-secs", JSON.stringify(secs)); }, [secs]);
   const toggleSec = (k) => setSecs((s) => ({ ...s, [k]: !s[k] }));
   useEffect(() => { save("rv-open", JSON.stringify(openTabs)); }, [openTabs]);
+  useEffect(() => { save("rv-rtabs", JSON.stringify(rightTabs)); save("rv-rtab", rightTab); }, [rightTabs, rightTab]);
+  const openRight = (id) => { setRightTabs((t) => (t.includes(id) ? t : [...t, id])); setRightTab(id); };
+  const closeRight = (id) => {
+    const i = rightTabs.indexOf(id);
+    const next = rightTabs.filter((x) => x !== id);
+    const keep = next.length ? next : ["dp"]; // la ruta de datos vuelve si se cierra todo
+    setRightTabs(keep);
+    if (id === rightTab || !next.length) setRightTab(keep[Math.min(i, keep.length - 1)]);
+  };
   // abrir una pestaña (como VS Code): si no está abierta se agrega; focus=false la abre sin cambiar la activa
   const openTab = (id, focus = true) => {
     setOpenTabs((t) => (t.includes(id) ? t : [...t, id]));
@@ -424,6 +441,7 @@ export default function App() {
   const selectInstr = (addr) => { setSelAddr(addr === st.pc ? null : addr); setPanelTab("formato"); setL({ panel: true }); };
 
   const showCode = layout.code && openTabs.length > 0;
+  const curRight = rightTabs.includes(rightTab) ? rightTab : rightTabs[0];
   const dirty = { c: cSource !== built.c, asm: source !== built.asm, hex: hexSource !== built.hex };
   const onTabsWheel = (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY; };
   const wbStyle = { "--side-w": `${layout.side}px`, "--code-w": `${layout.codeW}px`, "--panel-h": `${layout.panelH}px` };
@@ -466,6 +484,10 @@ export default function App() {
               <Icon name={ic} size={22} />
             </button>
           ))}
+          <button className={`act${curRight === "isa" ? " on" : ""}`} title="Set de instrucciones RV32I" aria-label="Set de instrucciones RV32I"
+            aria-pressed={curRight === "isa"} onClick={() => openRight("isa")}>
+            <Icon name="book" size={22} />
+          </button>
         </nav>
 
         {/* ---------------- barra lateral ---------------- */}
@@ -484,6 +506,10 @@ export default function App() {
                         <button className="tree-item" onClick={() => openTab(f.id)}><span className={`ficon f-${f.id}`}>{f.icon}</span>{f.name}{dirty[f.id] && <span className="tdot-inline" aria-label="modificado" />}</button>
                       </div>
                     ))}
+                  </Section>
+                  <Section id="ref" title="Referencia" open={secs.ref !== false} onToggle={toggleSec}>
+                    <button className={`tree-item${curRight === "isa" ? " on" : ""}`} onClick={() => openRight("isa")}><span className="ficon f-isa"><Icon name="book" size={12} /></span>Set de instrucciones RV32I</button>
+                    <button className={`tree-item${curRight === "dp" ? " on" : ""}`} onClick={() => openRight("dp")}><span className="ficon f-dp"><Icon name="chip" size={12} /></span>Ruta de datos</button>
                   </Section>
                   <Section id="prog" title="Programa" open={secs.prog} onToggle={toggleSec}
                     actions={<button className="mini-btn" onClick={() => fileRef.current?.click()} title="Abrir archivo (.c, .s, .hex, .txt)" aria-label="Abrir archivo"><Icon name="open" size={15} /></button>}>
@@ -652,13 +678,40 @@ export default function App() {
 
             <div className="group dp-group">
               <div className="tabbar">
-                <div className="tabs"><span className="etab on static" role="tab" aria-selected="true"><span className="ficon f-dp"><Icon name="chip" size={13} /></span>Ruta de datos</span></div>
+                <div className="tabs" role="tablist" onWheel={onTabsWheel}>
+                  {rightTabs.map((id) => {
+                    const t = RIGHT_TABS[id];
+                    return (
+                      <div key={id} role="tab" tabIndex={0} aria-selected={curRight === id} className={`etab${curRight === id ? " on" : ""}`}
+                        onClick={() => setRightTab(id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRightTab(id); } }}
+                        onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); closeRight(id); } }} title={t.title}>
+                        <span className={`ficon ${t.cls}`}><Icon name={t.icon} size={13} /></span>
+                        <span className="tname">{t.name}</span>
+                        {(id !== "dp" || rightTabs.length > 1) && (
+                          <button className="tclose" onClick={(e) => { e.stopPropagation(); closeRight(id); }} aria-label={`Cerrar ${t.name}`} title="Cerrar">
+                            <span className="tdot" aria-hidden="true" /><Icon name="close" size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
                 <div className="tab-actions">
-                  <button className="mini-btn txt" onClick={doCopySvg} title="Copiar el diagrama como SVG"><Icon name="copy" size={15} />Copiar SVG</button>
-                  <button className="mini-btn txt" onClick={doDownloadSvg} title="Descargar el diagrama como SVG (tema claro)"><Icon name="download" size={15} />Descargar SVG</button>
+                  {curRight === "dp" && (
+                    <>
+                      <button className="mini-btn txt" onClick={doCopySvg} title="Copiar el diagrama como SVG"><Icon name="copy" size={15} />Copiar SVG</button>
+                      <button className="mini-btn txt" onClick={doDownloadSvg} title="Descargar el diagrama como SVG (tema claro)"><Icon name="download" size={15} />Descargar SVG</button>
+                    </>
+                  )}
+                  {curRight === "isa" && (
+                    <a className="mini-btn txt" href="https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html" target="_blank" rel="noreferrer" title="Abrir la especificación oficial">Especificación ↗</a>
+                  )}
                 </div>
               </div>
-              <div className="dp-scroll">
+              {rightTabs.includes("isa") && (
+                <div className="isa-scroll" hidden={curRight !== "isa"}><IsaRef /></div>
+              )}
+              <div className="dp-scroll" hidden={curRight !== "dp"}>
                 <div className="instr-head">
                   {okSig ? (
                     <>

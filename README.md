@@ -8,6 +8,7 @@ App en React + Vite para ver, ciclo a ciclo, cómo fluyen los datos por el proce
 - **Formato de la instrucción:** clic en cualquier instrucción del listado para ver sus 32 bits separados por campos (op y funct en verde azulado, registros en azul, inmediato en ámbar), el valor de cada campo y cómo Extend arma el inmediato a partir de sus piezas. Incluye la tabla de los seis formatos.
 - **Interfaz estilo VS Code:** barra de depuración en la barra de título (ejecutar/pausa F5, paso F10, atrás, reiniciar Mayús+F5, velocidad); barra de actividades con tres vistas (Explorador, Simulación, Compilador); editor de código (CodeMirror) con resaltado de C, ensamblador RISC-V y hexadecimal, números de línea, errores subrayados y la línea en ejecución marcada, también en el C original; ruta de datos al lado; panel inferior con Formato, Señales, Problemas y Salida; barra de estado. Las pestañas se abren y se cierran como en VS Code (× o clic con la rueda; un punto indica cambios sin compilar); compilar main.c abre programa.s, y el Explorador lista los editores abiertos. Las divisiones se arrastran y todo se puede ocultar; la app recuerda el diseño.
 - **Acciones del editor como en VS Code:** el icono ▷ en la barra de pestañas ejecuta la acción principal (Ctrl+Enter) y la flecha ▾ abre el menú: compilar, compilar y ejecutar, compilar con GCC, ensamblar y ejecutar, cargar y ejecutar. La última opción elegida queda como principal.
+- **Referencia RV32I:** pestaña «RV32I» (icono de libro en la barra de actividades, o Explorador → Referencia) con el capítulo RV32I v2.1 de la especificación oficial resumido en español: modelo del programador, formatos, cómo se forma cada inmediato, las 40 instrucciones con su codificación por campos, operación y descripción, pseudoinstrucciones y HINT. Tiene búsqueda y filtros por formato y por instrucciones del procesador del libro.
 - **Vista Simulación:** registros, memoria de instrucciones (con la instrucción del PC marcada y puntos de interrupción con clic en el margen) y memoria de datos.
 - **Zoom del diagrama:** botones − / % / + y "ver completo" en la esquina; Ctrl + rueda (o pellizco en el trackpad) acerca alrededor del cursor; arrastrar mueve el diagrama; doble clic acerca; teclas + − 0.
 - **Exportar el diagrama:** "Descargar SVG" guarda la ruta de datos del ciclo actual, con el camino activo resaltado y en tema claro, lista para diapositivas o Inkscape. "Copiar SVG" la deja en el portapapeles.
@@ -46,6 +47,8 @@ src/sim/godbolt.js      compilación con GCC vía Compiler Explorer
 src/components/InstrAnatomy.jsx   bits y campos de una instrucción
 src/components/CodeEditor.jsx     editor CodeMirror con lenguajes C, RISC-V y hex
 src/sim/svgExport.js    exportación del diagrama a SVG
+src/components/IsaRef.jsx         página de referencia RV32I
+src/programs/rv32iDoc.js          datos de la referencia (fuente: docs.riscv.org, v20260120)
 src/sim/cpu.js          Main Decoder, ALU Decoder, Extend, ALU, paso de un ciclo y caminos activos
 src/components/Datapath.jsx   diagrama SVG (geometría de las diapositivas)
 src/App.jsx             interfaz

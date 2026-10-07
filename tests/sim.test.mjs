@@ -4,6 +4,8 @@ import { assemble, loadHex, hex, disassemble } from "../src/sim/isa.js";
 import { initialState, step } from "../src/sim/cpu.js";
 import { EXAMPLES } from "../src/programs/examples.js";
 import { compileC } from "../src/sim/minic.js";
+import { INSTRUCTIONS } from "../src/programs/rv32iDoc.js";
+import { RV32I } from "../src/sim/isa.js";
 
 let fails = 0;
 const check = (cond, msg) => { if (!cond) { fails++; console.log("FALLA:", msg); } else console.log("ok:", msg); };
@@ -95,6 +97,16 @@ for (const [name, c, get, want] of cCases) {
   check(out && !out.error && only && get(out.st) === want, `C: ${name} = ${want}` + (out ? "" : " " + JSON.stringify(r.errors.concat(prog.errors))));
 }
 check(compileC("int main(){int a=3; return a/2;}").errors.length === 1, "C: la división se rechaza con mensaje");
+
+// 9. La referencia RV32I coincide con la tabla de codificación del ensamblador
+{
+  const bad = INSTRUCTIONS.filter((d) => RV32I[d.m]).filter((d) => {
+    const [, op, f3, f7] = RV32I[d.m];
+    return op !== d.op || (f3 !== undefined && f3 !== d.f3) || (f7 !== undefined && f7 !== d.f7);
+  }).map((d) => d.m);
+  check(bad.length === 0, "referencia RV32I: opcode/funct3/funct7 coinciden con isa.js " + bad.join(","));
+  check(INSTRUCTIONS.filter((d) => !d.variant).length === 40, "referencia RV32I: 40 instrucciones base");
+}
 
 console.log(fails ? `\n${fails} pruebas fallaron` : "\nTodas las pruebas pasaron");
 process.exit(fails ? 1 : 0);
